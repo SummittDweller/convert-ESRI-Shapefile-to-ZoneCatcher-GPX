@@ -1,19 +1,24 @@
 # ESRI Shapefile to Zone Catcher GPX Converter
 
-A Python utility that converts ESRI shapefiles to GPX format with zones/tracks, suitable for use with zone catcher applications.
+A Python utility that converts ESRI shapefiles to GPX format with zones/tracks, optimized for use with zone catcher applications.
 
 ## Features
 
-- Converts polygon and multipolygon geometries from shapefiles to GPX tracks
-- Each zone is numbered sequentially in the output GPX file
-- Handles both simple polygons and complex multipolygon features
-- Automated virtual environment setup and dependency management
+- **Automatic Coordinate Reprojection**: Converts shapefile data to WGS84 (EPSG:4326) for proper GPS coordinates
+- **Smart Point Simplification**: Reduces zones to a maximum of 200 points while preserving shape integrity using the Douglas-Peucker algorithm
+- **Rich Metadata**: Includes shapefile attributes (name, owner, manager, type, county, acres, access, hunting status) in GPX track names and descriptions
+- **Flexible Output Options**: 
+  - Creates individual files with 100 zones each
+  - Includes `combine_zones.py` script to merge files into larger groups (up to 1000 zones per file)
+- **Sequential Zone Numbering**: Four-digit zero-padded zone numbers (e.g., Zone 0001, Zone 0002) for proper file sorting
+- **Automated Environment Setup**: Shell script handles virtual environment creation and dependency installation
 
 ## Requirements
 
 - Python 3.x
 - geopandas
 - gpxpy
+- shapely (included with geopandas)
 
 ## Installation & Usage
 
@@ -26,8 +31,8 @@ Simply run the provided shell script:
 ```
 
 The script will automatically:
-1. Create a virtual environment if it doesn't exist
-2. Install required dependencies
+1. Create a virtual environment (`.venv`) if it doesn't exist
+2. Install required dependencies from `python-requirements.txt`
 3. Run the conversion script
 
 ### Manual Setup
@@ -44,9 +49,37 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r python-requirements.txt
 
-# Run the script
+# Run the main conversion script
 python main.py
+
+# Optionally combine zone files (groups of 1000)
+python combine_zones.py
 ```
+
+## Scripts
+
+### main.py
+
+Converts ESRI shapefiles to GPX format with the following processing:
+- Reads shapefile data from the configured directory
+- Reprojects coordinates to WGS84 (latitude/longitude)
+- Simplifies complex geometries to stay under 200 points per zone
+- Enriches GPX tracks with metadata from shapefile attributes
+- Outputs files containing 100 zones each
+
+**Configuration:**
+- `shapefile_path`: Path to input shapefile
+- `output_dir`: Directory for GPX output files
+- `zones_per_file`: Number of zones per output file (default: 100)
+- `max_points_per_zone`: Maximum points per zone (default: 200)
+
+### combine_zones.py
+
+Merges individual zone files into larger combined files:
+- Processes all zone files in groups
+- Creates combined files with up to 1000 zones each
+- Maintains zone numbering in output filenames
+- Automatically handles remaining zones in the final file
 
 ## Data Source
 
@@ -56,18 +89,54 @@ The example GIS data used in this application comes from the Iowa Geodata Portal
 
 ## Configuration
 
-The script is currently configured to:
-- **Input**: `/Users/mark/Downloads/Public_Lands_Used_for_Conservation_and_Recreation_in_Iowa/Public_Lands_Used_for_Conservation_and_Recreation_in_Iowa.shp`
-- **Output**: `/Users/mark/Downloads/iowa_zones.gpx`
+The `main.py` script is currently configured with:
+- **Input Directory**: `/Users/mark/Downloads/Public_Lands_Used_for_Conservation_and_Recreation_in_Iowa/`
+- **Input File**: `Public_Lands_Used_for_Conservation_and_Recreation_in_Iowa.shp`
+- **Output Directory**: `/Users/mark/Downloads/iowa_zones/`
 
-To use your own shapefile, modify the `shapefile_path` variable in `main.py`.
+To use your own shapefile, modify the `shapefile_path` and `output_dir` variables in `main.py`.
 
 ## Output Format
 
-The converter creates GPX files with:
-- Each polygon/multipolygon as a separate track
-- Sequential zone numbering (Zone 1, Zone 2, etc.)
-- Proper latitude/longitude coordinates from the shapefile geometries
+### Individual Zone Files
+
+Files are named: `zones_NNNN_XXXX-YYYY.gpx` where:
+- `NNNN` = file number (zero-padded)
+- `XXXX-YYYY` = zone number range in the file
+
+### Combined Zone Files
+
+Files are named: `combined_zones_XXXX-YYYY.gpx` where:
+- `XXXX-YYYY` = zone number range (typically 1000 zones per file)
+
+### GPX Track Structure
+
+Each zone includes:
+- **Track Name**: `Zone NNNN: Location Name` (e.g., "Zone 0042: Auburn Hills Park")
+- **Track Description**: Pipe-separated attributes including:
+  - Name
+  - Owner
+  - Manager
+  - Type
+  - County
+  - Acres
+  - Access
+  - Public Hunting status
+- **Coordinates**: Simplified to ≤200 points while preserving shape
+- **Proper GPS coordinates**: WGS84 latitude/longitude values
+
+## Project Structure
+
+```
+.
+├── main.py                    # Main conversion script
+├── combine_zones.py           # Zone file combining utility
+├── run.sh                     # Automated setup and run script
+├── python-requirements.txt    # Python dependencies
+├── .gitignore                 # Git ignore rules
+├── .venv/                     # Virtual environment (auto-created)
+└── README.md                  # This file
+```
 
 ## License
 
